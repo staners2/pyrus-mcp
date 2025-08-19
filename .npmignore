@@ -1,0 +1,15 @@
+src/
+tsconfig.json
+*.ts
+!*.d.ts
+node_modules/
+.env*
+.git/
+.github/
+tests/
+*.test.*
+*.spec.*
+coverage/
+.nyc_output/
+.DS_Store
+Thumbs.db

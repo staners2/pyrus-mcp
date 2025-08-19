@@ -1,0 +1,75 @@
+{
+  "name": "pyrus-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Pyrus API integration",
+  "main": "dist/index.js",
+  "bin": {
+    "pyrus-mcp": "dist/index.js"
+  },
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && npm run type-check && tsc",
+    "build:prod": "npm run clean && tsc --sourceMap false --removeComments",
+    "build:watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "ts-node --transpile-only src/index.ts",
+    "dev:watch": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "clean": "rm -rf dist coverage .nyc_output",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts --max-warnings 0",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch --passWithNoTests",
+    "test:coverage": "jest --coverage --passWithNoTests",
+    "test:ci": "jest --ci --coverage --passWithNoTests --maxWorkers=2",
+    "security-check": "npm audit --audit-level moderate",
+    "security-check:fix": "npm audit fix",
+    "validate": "npm run type-check && npm run lint && npm run test && npm run security-check",
+    "validate:ci": "npm run type-check && npm run lint && npm run test:ci && npm run security-check",
+    "prepublishOnly": "npm run validate && npm run build:prod",
+    "postversion": "git push && git push --tags",
+    "size-limit": "bundlesize",
+    "analyze": "npm run build:prod && du -sh dist/*"
+  },
+  "keywords": [
+    "mcp",
+    "pyrus",
+    "api",
+    "task-management"
+  ],
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/staners2/pyrus-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/staners2/pyrus-mcp/issues"
+  },
+  "homepage": "https://github.com/staners2/pyrus-mcp#readme",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.2",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
