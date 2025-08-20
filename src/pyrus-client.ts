@@ -144,12 +144,15 @@ export class PyrusClient {
    */
   async moveTask(taskId: number, moveData: MoveTaskRequest): Promise<PyrusTask> {
     return httpClient.execute(async () => {
-      const response = await this.axiosInstance.post(`/tasks/${taskId}/comments`, {
-        action: 'move',
-        list_id: moveData.list_id,
-        responsible: moveData.responsible
-      });
-      return response.data.task;
+      const updateData: UpdateTaskRequest = {
+        added_list_ids: [moveData.list_id]
+      };
+      
+      if (moveData.responsible) {
+        updateData.responsible = moveData.responsible;
+      }
+      
+      return this.updateTask(taskId, updateData);
     }, `Move task ${taskId}`);
   }
 
@@ -283,5 +286,31 @@ export class PyrusClient {
       const task = await this.getTask(taskId);
       return task.comments || [];
     }, `Get comments for task ${taskId}`);
+  }
+
+  /**
+   * Find which lists contain the specified task
+   */
+  async getTaskLists(taskId: number): Promise<PyrusList[]> {
+    return httpClient.execute(async () => {
+      const allLists = await this.getLists();
+      const taskLists: PyrusList[] = [];
+
+      // Check each list to see if it contains our task
+      for (const list of allLists) {
+        try {
+          const listTasks = await this.getListTasks(list.id, { item_count: 1000 });
+          const hasTask = listTasks.some(task => task.id === taskId);
+          if (hasTask) {
+            taskLists.push(list);
+          }
+        } catch (error) {
+          // Skip lists that we can't access (e.g., insufficient permissions)
+          continue;
+        }
+      }
+
+      return taskLists;
+    }, `Get lists for task ${taskId}`);
   }
 }

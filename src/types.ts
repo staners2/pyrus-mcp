@@ -61,6 +61,8 @@ export interface PyrusTask {
   task_status: string;
   comments?: PyrusComment[];
   related_tasks?: PyrusTask[];
+  list_ids?: number[];
+  lists?: PyrusList[];
 }
 
 // Comment
@@ -87,6 +89,9 @@ export interface UpdateTaskRequest {
   responsible?: number;
   due_date?: string;
   participants?: number[];
+  list_ids?: number[];
+  added_list_ids?: number[];
+  removed_list_ids?: number[];
 }
 
 export interface MoveTaskRequest {
@@ -127,6 +132,9 @@ export interface UpdateTaskParams {
   responsible?: number;
   due_date?: string;
   participants?: number[];
+  list_ids?: number[];
+  added_list_ids?: number[];
+  removed_list_ids?: number[];
 }
 
 export interface MoveTaskParams {

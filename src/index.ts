@@ -223,6 +223,21 @@ class PyrusMCPServer {
                   type: 'array',
                   items: { type: 'number' },
                   description: 'Array of participant IDs (optional)'
+                },
+                list_ids: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  description: 'Array of list IDs to tag task with (optional)'
+                },
+                added_list_ids: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  description: 'Array of list IDs to add task to (optional)'
+                },
+                removed_list_ids: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  description: 'Array of list IDs to remove task from (optional)'
                 }
               },
               required: ['task_id']
@@ -405,6 +420,14 @@ class PyrusMCPServer {
           case 'get_task': {
             const params = args as unknown as GetTaskParams;
             const task = await client.getTask(params.task_id);
+            
+            // Get lists information for the task
+            try {
+              const taskLists = await client.getTaskLists(params.task_id);
+              (task as any).lists = taskLists;
+            } catch (error) {
+              logger.debug(`Could not get lists for task ${params.task_id}`, { error });
+            }
             
             return {
               content: [
@@ -607,6 +630,7 @@ class PyrusMCPServer {
            (task.responsible ? `Responsible: ${task.responsible.first_name} ${task.responsible.last_name}\n` : '') +
            (task.due_date ? `Due date: ${task.due_date}\n` : '') +
            (task.participants?.length ? `Participants: ${task.participants.map((p: any) => `${p.first_name} ${p.last_name}`).join(', ')}\n` : '') +
+           (task.lists?.length ? `Lists: ${task.lists.map((l: any) => `${l.name} (ID: ${l.id})`).join(', ')}\n` : '') +
            (task.comments?.length ? `Comments: ${task.comments.length}\n` : '') +
            (task.related_tasks?.length ? `Related Tasks: ${task.related_tasks.length} (IDs: ${task.related_tasks.map((t: any) => t.id).join(', ')})\n` : '');
   }
@@ -631,6 +655,9 @@ class PyrusMCPServer {
       }
       if (task.due_date) {
         result += `   Due date: ${task.due_date}\n`;
+      }
+      if (task.lists?.length) {
+        result += `   Lists: ${task.lists.map((l: any) => `${l.name} (ID: ${l.id})`).join(', ')}\n`;
       }
       result += '\n';
     });
