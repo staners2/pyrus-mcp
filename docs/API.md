@@ -7,10 +7,16 @@ This document describes all available MCP tools provided by the Pyrus MCP server
 | Tool | Description |
 |------|-------------|
 | `create_task` | Create a new task in Pyrus |
-| `get_task` | Retrieve task details by ID |
+| `get_task` | Retrieve task details by ID (includes related tasks) |
 | `update_task` | Update existing task (comments, status, assignments) |
 | `move_task` | Move task to different list/column |
 | `get_profile` | Get current user profile information |
+| `get_lists` | Get all lists/forms available to the user |
+| `find_list` | Find a list by name (case-insensitive search) |
+| `get_list_tasks` | Get tasks from a specific list with filtering options |
+| `get_related_tasks` | Get tasks related to a specific task |
+| `add_comment` | Add a comment to a task |
+| `get_task_comments` | Get all comments for a specific task |
 
 ## create_task
 
@@ -67,6 +73,7 @@ Returns complete task information including:
 - Dates (created, modified, due)
 - People (author, responsible, participants)
 - Comments count
+- Related tasks (if any) with count and IDs
 
 ## update_task
 
@@ -145,6 +152,155 @@ Returns user profile including:
 - User ID
 - Locale and timezone
 - Organization details
+
+## get_lists
+
+Gets all lists/forms available to the user. Results are cached for 5 minutes for performance.
+
+### Parameters
+
+None.
+
+### Example
+
+```json
+{}
+```
+
+### Response
+
+Returns an array of lists with:
+- List ID and name
+- Creation and modification dates
+- Organization information
+- Field count (if applicable)
+
+## find_list
+
+Finds a list by name using case-insensitive search.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | ✅ | List name to search for (partial match) |
+
+### Example
+
+```json
+{
+  "name": "task management"
+}
+```
+
+### Response
+
+Returns the first matching list or null if no list found.
+
+## get_list_tasks
+
+Gets tasks from a specific list with optional filtering capabilities.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `list_id` | number | ✅ | List ID to get tasks from |
+| `item_count` | number | ❌ | Limit the number of tasks returned |
+| `include_archived` | boolean | ❌ | Include archived tasks |
+| `modified_after` | string | ❌ | Filter tasks modified after date (ISO YYYY-MM-DD) |
+| `modified_before` | string | ❌ | Filter tasks modified before date (ISO YYYY-MM-DD) |
+| `created_after` | string | ❌ | Filter tasks created after date (ISO YYYY-MM-DD) |
+| `created_before` | string | ❌ | Filter tasks created before date (ISO YYYY-MM-DD) |
+| `due_after` | string | ❌ | Filter tasks with due date after (ISO YYYY-MM-DD) |
+| `due_before` | string | ❌ | Filter tasks with due date before (ISO YYYY-MM-DD) |
+
+### Example
+
+```json
+{
+  "list_id": 100,
+  "item_count": 50,
+  "modified_after": "2024-01-01",
+  "include_archived": false
+}
+```
+
+### Response
+
+Returns an array of tasks from the specified list matching the filters.
+
+## get_related_tasks
+
+Gets tasks that are related to a specific task.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task_id` | number | ✅ | Task ID to get related tasks for |
+
+### Example
+
+```json
+{
+  "task_id": 12345
+}
+```
+
+### Response
+
+Returns an array of related tasks or empty array if no related tasks exist.
+
+## add_comment
+
+Adds a comment to an existing task.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task_id` | number | ✅ | Task ID to add comment to |
+| `text` | string | ✅ | Comment text |
+
+### Example
+
+```json
+{
+  "task_id": 12345,
+  "text": "Progress update: 75% complete"
+}
+```
+
+### Response
+
+Returns the updated task details including the new comment.
+
+## get_task_comments
+
+Gets all comments for a specific task.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task_id` | number | ✅ | Task ID to get comments for |
+
+### Example
+
+```json
+{
+  "task_id": 12345
+}
+```
+
+### Response
+
+Returns an array of comments with:
+- Comment ID and text
+- Author information
+- Creation date
+- Action type (if applicable)
 
 ## Error Handling
 

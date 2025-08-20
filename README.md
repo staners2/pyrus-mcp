@@ -34,10 +34,27 @@ claude mcp add pyrus npx pyrus-mcp \
 
 ## Features
 
+### Task Management
+
 - **create_task**: Create new tasks in Pyrus
 - **get_task**: Retrieve task details by ID  
 - **update_task**: Update existing tasks (comments, status changes, assignments)
 - **move_task**: Move tasks between different lists/columns
+
+### List Management
+
+- **get_lists**: Get all lists/forms available to the user
+- **find_list**: Find a list by name (case-insensitive search)
+- **get_list_tasks**: Get tasks from a specific list with filtering options
+- **get_related_tasks**: Get tasks related to a specific task
+
+### Comments
+
+- **add_comment**: Add a comment to a task
+- **get_task_comments**: Get all comments for a specific task
+
+### User Profile
+
 - **get_profile**: Get current user profile information
 
 ## Documentation

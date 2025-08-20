@@ -60,6 +60,7 @@ export interface PyrusTask {
   participants?: PyrusPerson[];
   task_status: string;
   comments?: PyrusComment[];
+  related_tasks?: PyrusTask[];
 }
 
 // Comment
@@ -132,4 +133,102 @@ export interface MoveTaskParams {
   task_id: number;
   list_id: number;
   responsible?: number;
+}
+
+// List/Form types
+export interface PyrusList {
+  id: number;
+  name: string;
+  header?: string;
+  organization_id?: number;
+  fields?: PyrusField[];
+  create_date?: string;
+  last_modified_date?: string;
+}
+
+export interface PyrusField {
+  id: number;
+  name: string;
+  type: string;
+  parent_id?: number;
+  options?: any[];
+}
+
+// List API requests and responses
+export interface GetListsResponse {
+  lists: PyrusList[];
+}
+
+export interface GetListResponse {
+  id: number;
+  name: string;
+  header?: string;
+  organization_id?: number;
+  fields?: PyrusField[];
+  create_date?: string;
+  last_modified_date?: string;
+}
+
+export interface GetListTasksRequest {
+  item_count?: number;
+  include_archived?: boolean;
+  modified_before?: string;
+  modified_after?: string;
+  created_before?: string;
+  created_after?: string;
+  due_before?: string;
+  due_after?: string;
+}
+
+export interface GetListTasksResponse {
+  tasks: PyrusTask[];
+}
+
+// Comment API requests
+export interface AddCommentRequest {
+  text: string;
+  action?: string;
+}
+
+export interface GetTaskCommentsResponse {
+  comments: PyrusComment[];
+}
+
+// Related tasks
+export interface GetRelatedTasksResponse {
+  tasks: PyrusTask[];
+}
+
+// MCP tool parameters for new functions
+export interface GetListsParams {
+  // No parameters needed
+}
+
+export interface FindListParams {
+  name: string;
+}
+
+export interface GetListTasksParams {
+  list_id: number;
+  item_count?: number;
+  include_archived?: boolean;
+  modified_after?: string;
+  modified_before?: string;
+  created_after?: string;
+  created_before?: string;
+  due_after?: string;
+  due_before?: string;
+}
+
+export interface GetRelatedTasksParams {
+  task_id: number;
+}
+
+export interface AddCommentParams {
+  task_id: number;
+  text: string;
+}
+
+export interface GetTaskCommentsParams {
+  task_id: number;
 }

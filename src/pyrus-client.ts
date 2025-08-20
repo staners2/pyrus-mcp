@@ -8,9 +8,13 @@ import {
   PyrusConfig,
   PyrusTask,
   PyrusProfile,
+  PyrusList,
+  PyrusComment,
   CreateTaskRequest,
   UpdateTaskRequest,
   MoveTaskRequest,
+  GetListTasksRequest,
+  AddCommentRequest,
   AuthRequest
 } from './types.js';
 import { logger, httpClient } from './utilities.js';
@@ -28,6 +32,9 @@ export class PyrusClient {
   
   // Simple profile cache
   private profileCache: { profile: PyrusProfile; expires: number } | null = null;
+  
+  // Simple lists cache
+  private listsCache: { lists: PyrusList[]; expires: number } | null = null;
 
   constructor(config: PyrusConfig) {
     this.login = config.login;
@@ -167,5 +174,114 @@ export class PyrusClient {
     };
 
     return profile;
+  }
+
+  /**
+   * Get all lists/forms available to the user (with caching)
+   */
+  async getLists(): Promise<PyrusList[]> {
+    // Check cache first
+    if (this.listsCache && Date.now() < this.listsCache.expires) {
+      return this.listsCache.lists;
+    }
+
+    const lists = await httpClient.execute(async () => {
+      const response = await this.axiosInstance.get('/lists');
+      return response.data.lists || response.data;
+    }, 'Get lists');
+
+    // Cache for 5 minutes
+    this.listsCache = {
+      lists,
+      expires: Date.now() + (5 * 60 * 1000)
+    };
+
+    return lists;
+  }
+
+  /**
+   * Find list by name (case-insensitive search)
+   */
+  async findList(name: string): Promise<PyrusList | null> {
+    const lists = await this.getLists();
+    const searchName = name.toLowerCase().trim();
+    
+    return lists.find(list => 
+      list.name.toLowerCase().includes(searchName)
+    ) || null;
+  }
+
+  /**
+   * Get tasks from a specific list with filtering options
+   */
+  async getListTasks(listId: number, filters: GetListTasksRequest = {}): Promise<PyrusTask[]> {
+    return httpClient.execute(async () => {
+      const params = new URLSearchParams();
+      
+      // Add filter parameters
+      if (filters.item_count !== undefined) {
+        params.append('item_count', filters.item_count.toString());
+      }
+      if (filters.include_archived !== undefined) {
+        params.append('include_archived', filters.include_archived.toString());
+      }
+      // According to Pyrus API documentation, only modified_after/before are supported
+      if (filters.modified_after) {
+        params.append('modified_after', filters.modified_after);
+      }
+      if (filters.modified_before) {
+        params.append('modified_before', filters.modified_before);
+      }
+      // Keep created_* and due_* for potential future use or custom filtering
+      if (filters.created_after) {
+        params.append('created_after', filters.created_after);
+      }
+      if (filters.created_before) {
+        params.append('created_before', filters.created_before);
+      }
+      if (filters.due_after) {
+        params.append('due_after', filters.due_after);
+      }
+      if (filters.due_before) {
+        params.append('due_before', filters.due_before);
+      }
+
+      const queryString = params.toString();
+      const url = `/lists/${listId}/tasks${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await this.axiosInstance.get(url);
+      return response.data.tasks || response.data;
+    }, `Get tasks for list ${listId}`);
+  }
+
+  /**
+   * Get related tasks for a specific task
+   * This extracts related tasks from the main task response
+   */
+  async getRelatedTasks(taskId: number): Promise<PyrusTask[]> {
+    return httpClient.execute(async () => {
+      const task = await this.getTask(taskId);
+      return task.related_tasks || [];
+    }, `Get related tasks for task ${taskId}`);
+  }
+
+  /**
+   * Add a comment to a task
+   */
+  async addComment(taskId: number, commentData: AddCommentRequest): Promise<PyrusTask> {
+    return httpClient.execute(async () => {
+      const response = await this.axiosInstance.post(`/tasks/${taskId}/comments`, commentData);
+      return response.data.task;
+    }, `Add comment to task ${taskId}`);
+  }
+
+  /**
+   * Get all comments for a task
+   */
+  async getTaskComments(taskId: number): Promise<PyrusComment[]> {
+    return httpClient.execute(async () => {
+      const task = await this.getTask(taskId);
+      return task.comments || [];
+    }, `Get comments for task ${taskId}`);
   }
 }

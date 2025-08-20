@@ -20,6 +20,11 @@ import {
   GetTaskParams,
   UpdateTaskParams,
   MoveTaskParams,
+  FindListParams,
+  GetListTasksParams,
+  GetRelatedTasksParams,
+  AddCommentParams,
+  GetTaskCommentsParams,
   PyrusConfig,
 } from './types.js';
 import { logger } from './utilities.js';
@@ -252,6 +257,120 @@ class PyrusMCPServer {
               type: 'object',
               properties: {}
             }
+          },
+          {
+            name: 'get_lists',
+            description: 'Get all lists/forms available to the user',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'find_list',
+            description: 'Find a list by name (case-insensitive search)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'List name to search for'
+                }
+              },
+              required: ['name']
+            }
+          },
+          {
+            name: 'get_list_tasks',
+            description: 'Get tasks from a specific list with filtering options',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                list_id: {
+                  type: 'number',
+                  description: 'List ID to get tasks from'
+                },
+                item_count: {
+                  type: 'number',
+                  description: 'Limit the number of tasks returned (optional)'
+                },
+                include_archived: {
+                  type: 'boolean',
+                  description: 'Include archived tasks (optional)'
+                },
+                modified_after: {
+                  type: 'string',
+                  description: 'Filter tasks modified after this date (ISO format YYYY-MM-DD) (optional)'
+                },
+                modified_before: {
+                  type: 'string',
+                  description: 'Filter tasks modified before this date (ISO format YYYY-MM-DD) (optional)'
+                },
+                created_after: {
+                  type: 'string',
+                  description: 'Filter tasks created after this date (ISO format YYYY-MM-DD) (optional)'
+                },
+                created_before: {
+                  type: 'string',
+                  description: 'Filter tasks created before this date (ISO format YYYY-MM-DD) (optional)'
+                },
+                due_after: {
+                  type: 'string',
+                  description: 'Filter tasks with due date after this date (ISO format YYYY-MM-DD) (optional)'
+                },
+                due_before: {
+                  type: 'string',
+                  description: 'Filter tasks with due date before this date (ISO format YYYY-MM-DD) (optional)'
+                }
+              },
+              required: ['list_id']
+            }
+          },
+          {
+            name: 'get_related_tasks',
+            description: 'Get tasks related to a specific task',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                task_id: {
+                  type: 'number',
+                  description: 'Task ID to get related tasks for'
+                }
+              },
+              required: ['task_id']
+            }
+          },
+          {
+            name: 'add_comment',
+            description: 'Add a comment to a task',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                task_id: {
+                  type: 'number',
+                  description: 'Task ID to add comment to'
+                },
+                text: {
+                  type: 'string',
+                  description: 'Comment text'
+                }
+              },
+              required: ['task_id', 'text']
+            }
+          },
+          {
+            name: 'get_task_comments',
+            description: 'Get all comments for a specific task',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                task_id: {
+                  type: 'number',
+                  description: 'Task ID to get comments for'
+                }
+              },
+              required: ['task_id']
+            }
           }
         ]
       };
@@ -346,6 +465,102 @@ class PyrusMCPServer {
             };
           }
 
+          case 'get_lists': {
+            const lists = await client.getLists();
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatLists(lists, 'Available Lists:')
+                }
+              ]
+            };
+          }
+
+          case 'find_list': {
+            const params = args as unknown as FindListParams;
+            const list = await client.findList(params.name);
+            
+            if (!list) {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: `No list found with name containing: "${params.name}"`
+                  }
+                ]
+              };
+            }
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatList(list, 'Found List:')
+                }
+              ]
+            };
+          }
+
+          case 'get_list_tasks': {
+            const params = args as unknown as GetListTasksParams;
+            const { list_id, ...filters } = params;
+            const tasks = await client.getListTasks(list_id, filters);
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatTasks(tasks, `Tasks in List ${list_id}:`)
+                }
+              ]
+            };
+          }
+
+          case 'get_related_tasks': {
+            const params = args as unknown as GetRelatedTasksParams;
+            const tasks = await client.getRelatedTasks(params.task_id);
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatTasks(tasks, `Related Tasks for Task ${params.task_id}:`)
+                }
+              ]
+            };
+          }
+
+          case 'add_comment': {
+            const params = args as unknown as AddCommentParams;
+            const { task_id, text } = params;
+            const task = await client.addComment(task_id, { text });
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatTask(task, 'Comment added successfully!')
+                }
+              ]
+            };
+          }
+
+          case 'get_task_comments': {
+            const params = args as unknown as GetTaskCommentsParams;
+            const comments = await client.getTaskComments(params.task_id);
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatComments(comments, `Comments for Task ${params.task_id}:`)
+                }
+              ]
+            };
+          }
+
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
         }
@@ -392,7 +607,100 @@ class PyrusMCPServer {
            (task.responsible ? `Responsible: ${task.responsible.first_name} ${task.responsible.last_name}\n` : '') +
            (task.due_date ? `Due date: ${task.due_date}\n` : '') +
            (task.participants?.length ? `Participants: ${task.participants.map((p: any) => `${p.first_name} ${p.last_name}`).join(', ')}\n` : '') +
-           (task.comments?.length ? `Comments: ${task.comments.length}\n` : '');
+           (task.comments?.length ? `Comments: ${task.comments.length}\n` : '') +
+           (task.related_tasks?.length ? `Related Tasks: ${task.related_tasks.length} (IDs: ${task.related_tasks.map((t: any) => t.id).join(', ')})\n` : '');
+  }
+
+  /**
+   * Format multiple tasks for display
+   */
+  private formatTasks(tasks: any[], title: string): string {
+    if (!tasks || tasks.length === 0) {
+      return `${title}\n\nNo tasks found.`;
+    }
+
+    let result = `${title}\n\nFound ${tasks.length} task(s):\n\n`;
+    
+    tasks.forEach((task, index) => {
+      result += `${index + 1}. Task #${task.id}\n`;
+      result += `   Text: ${task.text}\n`;
+      result += `   Status: ${task.task_status}\n`;
+      result += `   Created: ${task.create_date}\n`;
+      if (task.responsible) {
+        result += `   Responsible: ${task.responsible.first_name} ${task.responsible.last_name}\n`;
+      }
+      if (task.due_date) {
+        result += `   Due date: ${task.due_date}\n`;
+      }
+      result += '\n';
+    });
+
+    return result;
+  }
+
+  /**
+   * Format list for display
+   */
+  private formatList(list: any, title: string): string {
+    return `${title}\n\n` +
+           `ID: ${list.id}\n` +
+           `Name: ${list.name}\n` +
+           (list.header ? `Header: ${list.header}\n` : '') +
+           (list.organization_id ? `Organization ID: ${list.organization_id}\n` : '') +
+           (list.create_date ? `Created: ${list.create_date}\n` : '') +
+           (list.last_modified_date ? `Last Modified: ${list.last_modified_date}\n` : '') +
+           (list.fields?.length ? `Fields: ${list.fields.length}\n` : '');
+  }
+
+  /**
+   * Format multiple lists for display
+   */
+  private formatLists(lists: any[], title: string): string {
+    if (!lists || lists.length === 0) {
+      return `${title}\n\nNo lists found.`;
+    }
+
+    let result = `${title}\n\nFound ${lists.length} list(s):\n\n`;
+    
+    lists.forEach((list, index) => {
+      result += `${index + 1}. List #${list.id}\n`;
+      result += `   Name: ${list.name}\n`;
+      if (list.header) {
+        result += `   Header: ${list.header}\n`;
+      }
+      if (list.create_date) {
+        result += `   Created: ${list.create_date}\n`;
+      }
+      result += '\n';
+    });
+
+    return result;
+  }
+
+  /**
+   * Format comments for display
+   */
+  private formatComments(comments: any[], title: string): string {
+    if (!comments || comments.length === 0) {
+      return `${title}\n\nNo comments found.`;
+    }
+
+    let result = `${title}\n\nFound ${comments.length} comment(s):\n\n`;
+    
+    comments.forEach((comment, index) => {
+      result += `${index + 1}. Comment #${comment.id}\n`;
+      result += `   Author: ${comment.author.first_name} ${comment.author.last_name}\n`;
+      result += `   Date: ${comment.create_date}\n`;
+      if (comment.text) {
+        result += `   Text: ${comment.text}\n`;
+      }
+      if (comment.action) {
+        result += `   Action: ${comment.action}\n`;
+      }
+      result += '\n';
+    });
+
+    return result;
   }
 
   /**
@@ -404,7 +712,11 @@ class PyrusMCPServer {
       await this.server.connect(transport);
       logger.info('Pyrus MCP server running', {
         version: '1.0.0',
-        capabilities: ['create_task', 'get_task', 'update_task', 'move_task', 'get_profile']
+        capabilities: [
+          'create_task', 'get_task', 'update_task', 'move_task', 'get_profile',
+          'get_lists', 'find_list', 'get_list_tasks', 'get_related_tasks', 
+          'add_comment', 'get_task_comments'
+        ]
       });
     } catch (error) {
       logger.error('Failed to start server transport', { 
