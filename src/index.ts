@@ -29,6 +29,9 @@ import {
 } from './types.js';
 import { logger } from './utilities.js';
 
+// Version from package.json
+const VERSION = '1.3.0';
+
 class PyrusMCPServer {
   private server: Server;
   private pyrusClient: PyrusClient | null = null;
@@ -37,7 +40,7 @@ class PyrusMCPServer {
     this.server = new Server(
       {
         name: 'pyrus-mcp',
-        version: '1.0.0',
+        version: VERSION,
       },
       {
         capabilities: {
@@ -738,7 +741,7 @@ class PyrusMCPServer {
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
       logger.info('Pyrus MCP server running', {
-        version: '1.0.0',
+        version: VERSION,
         capabilities: [
           'create_task', 'get_task', 'update_task', 'move_task', 'get_profile',
           'get_lists', 'find_list', 'get_list_tasks', 'get_related_tasks', 
@@ -752,6 +755,42 @@ class PyrusMCPServer {
       throw error;
     }
   }
+}
+
+/**
+ * Show help information
+ */
+function showHelp(): void {
+  console.log(`
+Pyrus MCP Server v${VERSION}
+MCP server for Pyrus API integration
+
+Usage:
+  pyrus-mcp              Start the MCP server
+  pyrus-mcp --version    Show version information
+  pyrus-mcp --help       Show this help message
+
+Environment Variables:
+  PYRUS_LOGIN            Your Pyrus login (required)
+  PYRUS_API_TOKEN        Your Pyrus API token (required)  
+  PYRUS_BASE_URL         Custom Pyrus API base URL (optional)
+  PYRUS_DOMAIN           Custom Pyrus domain (optional, default: pyrus.com)
+
+Available Tools:
+  • create_task          Create a new task
+  • get_task            Get task details
+  • update_task         Update existing task
+  • move_task           Move task to different list
+  • get_profile         Get user profile information
+  • get_lists           Get all available lists
+  • find_list           Find list by name
+  • get_list_tasks      Get tasks from specific list
+  • get_related_tasks   Get related tasks
+  • add_comment         Add comment to task
+  • get_task_comments   Get all task comments
+
+For more information, visit: https://github.com/staners2/pyrus-mcp
+`);
 }
 
 /**
@@ -769,5 +808,26 @@ async function startServer(): Promise<void> {
   }
 }
 
-// Start the server
-startServer();
+/**
+ * Main entry point
+ */
+function main(): void {
+  const args = process.argv.slice(2);
+  
+  // Handle command line arguments
+  if (args.includes('--version') || args.includes('-v')) {
+    console.log(`pyrus-mcp v${VERSION}`);
+    process.exit(0);
+  }
+  
+  if (args.includes('--help') || args.includes('-h')) {
+    showHelp();
+    process.exit(0);
+  }
+  
+  // Start the MCP server
+  startServer();
+}
+
+// Start the application
+main();
