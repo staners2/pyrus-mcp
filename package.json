@@ -1,10 +1,11 @@
 {
   "name": "pyrus-mcp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "MCP server for Pyrus API integration",
   "main": "dist/index.js",
   "bin": {
-    "pyrus-mcp": "dist/index.js"
+    "pyrus-mcp": "dist/index.js",
+    "pyrus-mcp-test": "dist/index.js"
   },
   "types": "dist/index.d.ts",
   "scripts": {
